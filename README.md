@@ -1,7 +1,7 @@
 # papillon
 Papillon is command line HTTP stress tester.
 
-Basicly WIP rewrite 1-to-1 of  [Pewpew](https://github.com/bengadbois/pewpew).
+Basicly WIP 1-to-1 rewrite of [Pewpew](https://github.com/bengadbois/pewpew).
 
 ```
 Usage: papillon [OPTIONS] [BODY] [BODY_FILE] [COOKIES] [BASIC_AUTH] [OUTPUT_JSON] [OUTPUT_CSV] [OUTPUT_XML] [CPU] <COMMAND>

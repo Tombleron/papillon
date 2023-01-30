@@ -1,26 +1,29 @@
+mod benchmark;
+mod requester;
+mod target;
+
+use std::error::Error;
+
 use clap::{Args, Parser, Subcommand};
 
 #[derive(Debug, Parser)]
 #[command(name = "papillon")]
 #[command(about="command line HTTP stress tester.", long_about=None)]
 struct Cli {
-    #[command(flatten)]
-    args: CliArgs,
-
     // Subcommand
     #[command(subcommand)]
     command: Commands,
 }
 
 #[derive(Args, Debug)]
-struct CliArgs {
-    #[arg(
-        short = 'r',
-        help = "Interpret URLs as regular expressions.",
-        default_value = "false"
-    )]
-    regex: bool,
-
+pub struct CliArgs {
+    // TODO: regex URLs
+    // #[arg(
+    //     short = 'r',
+    //     help = "Interpret URLs as regular expressions.",
+    //     default_value = "false"
+    // )]
+    // regex: bool,
     #[arg(
         long,
         help = "Prefetch IP from hostname before making request, eliminating DNS fetching from timing.",
@@ -33,14 +36,16 @@ struct CliArgs {
         help = "Maximum seconds to wait for response",
         default_value = "10"
     )]
-    timeout: i32,
+    timeout: u64,
 
     #[arg(
         short = 'X',
         help = "Request type. GET, HEAD, POST, PUT, etc.",
-        default_value = "GET"
+        value_enum,
+        default_value = "GET",
+        ignore_case = true
     )]
-    request_method: String,
+    request_method: requester::Method,
 
     #[arg(help = "String to use as request body e.g. POST body.")]
     body: Option<String>,
@@ -57,9 +62,11 @@ struct CliArgs {
 
     #[arg(
         short = 'H',
-        help = "Add arbitrary header line, eg. 'Accept-Encoding:gzip, Content-Type:application/json'"
+        help = "Add arbitrary header line, eg. 'Accept-Encoding:gzip, Content-Type:application/json'",
+        value_parser = parse_key_val::<String,String>,
+        value_delimiter=','
     )]
-    headers: Option<String>,
+    headers: Vec<(String, String)>,
 
     #[arg(help = "Add request cookies, eg. 'data=123; session=456'")]
     cookies: Option<String>,
@@ -67,12 +74,12 @@ struct CliArgs {
     #[arg(
         short = 'A',
         help = "Add User-Agent header. Can also be done with the arbitrary header flag.",
-        default_value = "pillon"
+        default_value = "papillon"
     )]
     user_agent: String,
 
-    #[arg(help = "Add HTTP basic authentication, eg. 'user123:password456'.")]
-    basic_auth: Option<String>,
+    #[arg(help = "Add HTTP basic authentication, eg. 'user123:password456'.", value_parser = parse_key_val::<String,String>)]
+    basic_auth: Option<(String, String)>,
 
     #[arg(
         short = 'C',
@@ -125,14 +132,27 @@ struct CliArgs {
     cpu: i32,
 }
 
+fn parse_key_val<T, U>(s: &str) -> Result<(T, U), Box<dyn Error + Send + Sync + 'static>>
+where
+    T: std::str::FromStr,
+    T::Err: Error + Send + Sync + 'static,
+    U: std::str::FromStr,
+    U::Err: Error + Send + Sync + 'static,
+{
+    let pos = s
+        .find(':')
+        .ok_or_else(|| format!("invalid KEY:VALUE: no `:` found in `{}`", s))?;
+    Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
+}
+
 #[derive(Debug, Subcommand)]
 enum Commands {
-    #[command(about = "Run benchmark tests")]
+    #[command(about = "Run benchmark tests", arg_required_else_help = true)]
     Benchmark {
         #[arg(long, help = "Requests per second to make.", default_value = "10")]
         rps: i32,
 
-        // TODO: swithc to Duration
+        // TODO: switch to Duration
         #[arg(
             help = "Number of seconds to send requests. Total benchmark test duration will be longer due to waiting for requests to finish.",
             default_value = "10",
@@ -140,12 +160,18 @@ enum Commands {
         )]
         duration: i32,
 
+        #[command(flatten)]
+        args: CliArgs,
+
         #[arg(help = "Benchmark targets")]
         targets: Vec<String>,
     },
 
     #[command(arg_required_else_help = true)]
-    Stress,
+    Stress {
+        #[command(flatten)]
+        args: CliArgs,
+    },
 }
 
 fn main() {
@@ -154,9 +180,13 @@ fn main() {
     match &cli.command {
         Commands::Benchmark {
             rps: _,
+            args: _,
             duration: _,
             targets: _,
-        } => todo!(),
-        Commands::Stress => todo!(),
+        } => {
+            dbg!(cli);
+            todo!()
+        }
+        Commands::Stress { args: _ } => todo!(),
     }
 }
