@@ -3,7 +3,8 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-
+use colored::Colorize;
+use anyhow::Context;
 use crate::{
     requester::{build_client, build_request},
     stats::{RequestStat, RequestStatSummary},
@@ -15,7 +16,7 @@ pub fn run_benchmark(
     duration: u64,
     args: CliArgs,
     urls: Vec<String>,
-) -> color_eyre::Result<RequestStatSummary> {
+) -> anyhow::Result<RequestStatSummary> {
     let request_delta = Duration::from_secs_f64(1.0 / rps as f64);
     // let request_count = duration * rps;
 
@@ -27,18 +28,18 @@ pub fn run_benchmark(
     for url in urls {
         //FIXME: unwrap
         let client = build_client(&args).unwrap();
-        let request = build_request(&url, &args, &client).unwrap();
+        let request =
+            build_request(&url, &args, &client).context("Failed to build request for {url}")?;
 
         let (tx, rx) = mpsc::channel();
 
-        let handle = thread::spawn(move || {
+        let handle = thread::spawn::<_, anyhow::Result<()>>(move || {
             let start = Instant::now();
 
             let mut last_request_time = start;
 
             // for _ in 0..request_count as usize {
             while start.elapsed().as_secs() < duration {
-
                 if last_request_time.elapsed() < request_delta {
                     thread::sleep(request_delta - last_request_time.elapsed());
                 }
@@ -49,10 +50,9 @@ pub fn run_benchmark(
                 // (probably)
                 let res = request
                     .try_clone()
-                    .unwrap()
+                    .context(format!("failed to build request for {url}"))?
                     .send()
-                    // TODO: This unwrap is not ok
-                    .unwrap();
+                    .context(format!("failed to send request for {url}"))?;
 
                 let duration = now.elapsed();
 
@@ -66,6 +66,7 @@ pub fn run_benchmark(
 
                 last_request_time = Instant::now();
             }
+            Ok(())
         });
 
         threads.push(handle);
@@ -74,7 +75,17 @@ pub fn run_benchmark(
 
     // let total_duration = benchmark_start.elapsed();
 
-    threads.into_iter().map(|x| x.join()).for_each(drop);
+    threads
+        .into_iter()
+        .map(|x| x.join().unwrap_or(Err(anyhow::anyhow!("Thread panicked"))))
+        .for_each(|result| match result {
+            Ok(_) => {}
+            Err(err) => {
+                if args.verbose {
+                    println!("{}", format!("\nError while processing target.\n\t{err}").red());
+                }
+            }
+        });
 
     Ok(RequestStatSummary::from(channels))
 }

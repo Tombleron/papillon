@@ -177,6 +177,7 @@ enum Commands {
 }
 
 fn main() {
+    
     let cli = Cli::parse();
 
     match cli.command {
@@ -187,7 +188,10 @@ fn main() {
             targets,
         } => {
                 let stats = run_benchmark(rps, duration, args, targets).unwrap();
-                dbg!(stats);
+
+                println!("\n----Summary----\n");
+
+                println!("{stats}");
         }
         Commands::Stress { args: _ } => todo!(),
     }

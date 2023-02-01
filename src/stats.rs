@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::Display, sync::mpsc::Receiver, time::Duration};
-
 use reqwest::blocking::Response;
+use colored::Colorize;
 
 #[derive(Default, Debug)]
 pub struct RequestStat {
@@ -36,11 +36,17 @@ impl From<Response> for RequestStat {
 
 impl Display for RequestStat {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
+        let string = format!(
             "{}\t{}\t{} bytes\t{:?}\t-> {}",
             self.proto, self.status, self.size, self.duration, self.url
-        )
+        );
+
+        match self.success {
+            true => 
+        write!(f, "{}", string.green()),
+            false => 
+        write!(f, "{}", string.red()),
+        }
     }
 }
 
@@ -101,5 +107,32 @@ impl From<Vec<Receiver<RequestStat>>> for RequestStatSummary {
         summary.avg_rps = 1.0 / summary.avg_duration.as_secs_f64();
 
         summary
+    }
+}
+
+impl Display for RequestStatSummary {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(
+            f,
+            "Timing\n\
+            Mean query speed:\t{:?}\n\
+            Fastest query speed:\t{:?}\n\
+            Slowest query speed:\t{:?}\n\
+            Mean RPS:\t{}\n\n\
+            Data transfered\n\
+            Mean query:\t{}\n\
+            Largest query:\t{}\n\
+            Smallest query:\t{}\n\
+            Total Query:\t{}\n\n\
+            Codes:\n",
+            self.avg_duration,
+            self.min_duration,
+            self.max_duration,
+            self.avg_rps,
+            self.avg_query_size,
+            self.min_query_size,
+            self.max_query_size,
+            self.total_query_size
+        )
     }
 }

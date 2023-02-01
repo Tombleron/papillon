@@ -33,7 +33,7 @@ impl Method {
     }
 }
 
-pub fn build_client(args: &CliArgs) -> color_eyre::Result<Client> {
+pub fn build_client(args: &CliArgs) -> anyhow::Result<Client> {
     let client_builder = if args.no_http2 {
         Client::builder().http1_only()
     } else {
@@ -60,7 +60,7 @@ pub fn build_client(args: &CliArgs) -> color_eyre::Result<Client> {
         .map_err(From::from)
 }
 
-pub fn build_request(url: &str, args: &CliArgs, client: &Client) -> color_eyre::Result<RequestBuilder> {
+pub fn build_request(url: &str, args: &CliArgs, client: &Client) -> anyhow::Result<RequestBuilder> {
     // let client_builder = reqwest::Client::builder();
 
     let request_url = if args.dns_prefetch {
