@@ -6,29 +6,29 @@ use crate::CliArgs;
 
 #[derive(Debug, Clone, ValueEnum)]
 pub enum Method {
-    GET,
-    POST,
-    PUT,
-    DELETE,
-    HEAD,
-    OPTIONS,
-    CONNECT,
-    PATCH,
-    TRACE,
+    Get,
+    Post,
+    Put,
+    Delete,
+    Head,
+    Options,
+    Connect,
+    Patch,
+    Trace,
 }
 
 impl Method {
     fn to_request(&self) -> reqwest::Method {
         match self {
-            Method::GET => reqwest::Method::GET,
-            Method::POST => reqwest::Method::POST,
-            Method::PUT => reqwest::Method::PUT,
-            Method::DELETE => reqwest::Method::DELETE,
-            Method::HEAD => reqwest::Method::HEAD,
-            Method::OPTIONS => reqwest::Method::OPTIONS,
-            Method::CONNECT => reqwest::Method::CONNECT,
-            Method::PATCH => reqwest::Method::PATCH,
-            Method::TRACE => reqwest::Method::TRACE,
+            Method::Get => reqwest::Method::GET,
+            Method::Post => reqwest::Method::POST,
+            Method::Put => reqwest::Method::PUT,
+            Method::Delete => reqwest::Method::DELETE,
+            Method::Head => reqwest::Method::HEAD,
+            Method::Options => reqwest::Method::OPTIONS,
+            Method::Connect => reqwest::Method::CONNECT,
+            Method::Patch => reqwest::Method::PATCH,
+            Method::Trace => reqwest::Method::TRACE,
         }
     }
 }

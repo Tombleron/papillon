@@ -21,10 +21,7 @@ impl RequestStat {
 
 impl From<Response> for RequestStat {
     fn from(value: Response) -> Self {
-        let success = match value.error_for_status_ref() {
-            Ok(_) => true,
-            Err(_) => false,
-        };
+        let success = value.error_for_status_ref().is_ok();
 
         Self {
             proto: format!("{:?}", value.version()),
