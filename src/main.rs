@@ -1,9 +1,10 @@
 mod benchmark;
 mod requester;
-mod target;
+mod stats;
 
 use std::error::Error;
 
+use benchmark::run_benchmark;
 use clap::{Args, Parser, Subcommand};
 
 #[derive(Debug, Parser)]
@@ -47,7 +48,7 @@ pub struct CliArgs {
     )]
     request_method: requester::Method,
 
-    #[arg(help = "String to use as request body e.g. POST body.")]
+    #[arg(long, help = "String to use as request body e.g. POST body.")]
     body: Option<String>,
 
     #[arg(
@@ -57,7 +58,7 @@ pub struct CliArgs {
     )]
     body_regex: bool,
 
-    #[arg(help="Path to file to use as request body. Will overwrite --body if both are present.", value_hint = clap::ValueHint::DirPath)]
+    #[arg(long, help="Path to file to use as request body. Will overwrite --body if both are present.", value_hint = clap::ValueHint::DirPath)]
     body_file: Option<std::path::PathBuf>,
 
     #[arg(
@@ -68,7 +69,7 @@ pub struct CliArgs {
     )]
     headers: Vec<(String, String)>,
 
-    #[arg(help = "Add request cookies, eg. 'data=123; session=456'")]
+    #[arg(long, help = "Add request cookies, eg. 'data=123; session=456'")]
     cookies: Option<String>,
 
     #[arg(
@@ -78,7 +79,7 @@ pub struct CliArgs {
     )]
     user_agent: String,
 
-    #[arg(help = "Add HTTP basic authentication, eg. 'user123:password456'.", value_parser = parse_key_val::<String,String>)]
+    #[arg(long, help = "Add HTTP basic authentication, eg. 'user123:password456'.", value_parser = parse_key_val::<String,String>)]
     basic_auth: Option<(String, String)>,
 
     #[arg(
@@ -104,13 +105,13 @@ pub struct CliArgs {
     )]
     enforce_ssl: bool,
 
-    #[arg(value_hint = clap::ValueHint::DirPath, help="Path to file to write full data as JSON")]
+    #[arg(long, value_hint = clap::ValueHint::DirPath, help="Path to file to write full data as JSON")]
     output_json: Option<std::path::PathBuf>,
 
-    #[arg(value_hint = clap::ValueHint::DirPath, help="Path to file to write full data as CSV")]
+    #[arg(long, value_hint = clap::ValueHint::DirPath, help="Path to file to write full data as CSV")]
     output_csv: Option<std::path::PathBuf>,
 
-    #[arg(value_hint = clap::ValueHint::DirPath, help="Path to file to write full data as XML")]
+    #[arg(long, value_hint = clap::ValueHint::DirPath, help="Path to file to write full data as XML")]
     output_xml: Option<std::path::PathBuf>,
 
     #[arg(
@@ -128,7 +129,7 @@ pub struct CliArgs {
     verbose: bool,
 
     // TODO: default value
-    #[arg(default_value = "1", help = "Number of CPUs to use.")]
+    #[arg(long, default_value = "1", help = "Number of CPUs to use.")]
     cpu: i32,
 }
 
@@ -141,7 +142,7 @@ where
 {
     let pos = s
         .find(':')
-        .ok_or_else(|| format!("invalid KEY:VALUE: no `:` found in `{}`", s))?;
+        .ok_or_else(|| format!("invalid KEY:VALUE: no `:` found in `{s}`"))?;
     Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
 }
 
@@ -150,7 +151,7 @@ enum Commands {
     #[command(about = "Run benchmark tests", arg_required_else_help = true)]
     Benchmark {
         #[arg(long, help = "Requests per second to make.", default_value = "10")]
-        rps: i32,
+        rps: u64,
 
         // TODO: switch to Duration
         #[arg(
@@ -158,12 +159,13 @@ enum Commands {
             default_value = "10",
             short = 'd'
         )]
-        duration: i32,
+        duration: u64,
 
         #[command(flatten)]
         args: CliArgs,
 
-        #[arg(help = "Benchmark targets")]
+        // #[arg(help = "Benchmark targets", action=clap::ArgAction::Set, last=true)]
+         #[arg(help = "Benchmark targets", last=true)]
         targets: Vec<String>,
     },
 
@@ -177,15 +179,15 @@ enum Commands {
 fn main() {
     let cli = Cli::parse();
 
-    match &cli.command {
+    match cli.command {
         Commands::Benchmark {
-            rps: _,
-            args: _,
-            duration: _,
-            targets: _,
+            rps,
+            duration,
+            args,
+            targets,
         } => {
-            dbg!(cli);
-            todo!()
+                let stats = run_benchmark(rps, duration, args, targets).unwrap();
+                dbg!(stats);
         }
         Commands::Stress { args: _ } => todo!(),
     }
