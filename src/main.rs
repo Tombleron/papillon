@@ -6,6 +6,7 @@ use std::error::Error;
 
 use benchmark::run_benchmark;
 use clap::{Args, Parser, Subcommand};
+use colored::Colorize;
 
 #[derive(Debug, Parser)]
 #[command(name = "papillon")]
@@ -165,7 +166,7 @@ enum Commands {
         args: CliArgs,
 
         // #[arg(help = "Benchmark targets", action=clap::ArgAction::Set, last=true)]
-         #[arg(help = "Benchmark targets", last=true)]
+        #[arg(help = "Benchmark targets", last = true)]
         targets: Vec<String>,
     },
 
@@ -177,7 +178,6 @@ enum Commands {
 }
 
 fn main() {
-    
     let cli = Cli::parse();
 
     match cli.command {
@@ -187,11 +187,16 @@ fn main() {
             args,
             targets,
         } => {
-                let stats = run_benchmark(rps, duration, args, targets).unwrap();
+            if rps == 0 || duration == 0 {
+                println!("{}", "Duration and RPS must be greater than zero.".red());
+                return;
+            }
 
-                println!("\n----Summary----\n");
+            let stats = run_benchmark(rps, duration, args, targets).unwrap();
 
-                println!("{stats}");
+            println!("\n----Summary----\n");
+
+            println!("{stats}");
         }
         Commands::Stress { args: _ } => todo!(),
     }

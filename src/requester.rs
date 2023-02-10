@@ -1,5 +1,10 @@
+use anyhow::Context;
 use clap::ValueEnum;
-use reqwest::{header, redirect::Policy, blocking::{RequestBuilder, Client}};
+use reqwest::{
+    blocking::{Client, RequestBuilder},
+    header,
+    redirect::Policy,
+};
 use std::{fs::read_to_string, net::ToSocketAddrs, time::Duration};
 
 use crate::CliArgs;
@@ -40,12 +45,11 @@ pub fn build_client(args: &CliArgs) -> anyhow::Result<Client> {
         Client::builder()
     };
 
-    // TODO: enforce SSL
     // TODO: keepalive
     client_builder
         .gzip(args.compress)
         // .http2_keep_alive_interval(if args.keepalive {
-            // FIXME: decide on interval value
+        //     // FIXME: decide on interval value
         //     Some(Duration::from_secs(5))
         // } else {
         //     None
@@ -56,6 +60,7 @@ pub fn build_client(args: &CliArgs) -> anyhow::Result<Client> {
         } else {
             Policy::none()
         })
+        .https_only(args.enforce_ssl)
         .build()
         .map_err(From::from)
 }
@@ -63,10 +68,11 @@ pub fn build_client(args: &CliArgs) -> anyhow::Result<Client> {
 pub fn build_request(url: &str, args: &CliArgs, client: &Client) -> anyhow::Result<RequestBuilder> {
     // let client_builder = reqwest::Client::builder();
 
+    // TODO: fix this
     let request_url = if args.dns_prefetch {
         let mut res = url.to_socket_addrs()?;
         // TODO: unwrap
-        res.next().unwrap().to_string()
+        res.next().context("Failed to DNS prefetch")?.to_string()
     } else {
         url.to_owned()
     };

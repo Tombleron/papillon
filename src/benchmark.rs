@@ -18,12 +18,10 @@ pub fn run_benchmark(
     urls: Vec<String>,
 ) -> anyhow::Result<RequestStatSummary> {
     let request_delta = Duration::from_secs_f64(1.0 / rps as f64);
-    // let request_count = duration * rps;
 
     let mut threads = Vec::with_capacity(urls.len());
     let mut channels = Vec::with_capacity(urls.len());
 
-    // let benchmark_start = Instant::now();
 
     for url in urls {
         //FIXME: unwrap
@@ -72,8 +70,6 @@ pub fn run_benchmark(
         threads.push(handle);
         channels.push(rx);
     }
-
-    // let total_duration = benchmark_start.elapsed();
 
     threads
         .into_iter()

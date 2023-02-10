@@ -1,6 +1,6 @@
-use std::{collections::HashMap, fmt::Display, sync::mpsc::Receiver, time::Duration};
-use reqwest::blocking::Response;
 use colored::Colorize;
+use reqwest::blocking::Response;
+use std::{collections::HashMap, fmt::Display, sync::mpsc::Receiver, time::Duration};
 
 #[derive(Default, Debug)]
 pub struct RequestStat {
@@ -42,10 +42,8 @@ impl Display for RequestStat {
         );
 
         match self.success {
-            true => 
-        write!(f, "{}", string.green()),
-            false => 
-        write!(f, "{}", string.red()),
+            true => write!(f, "{}", string.green()),
+            false => write!(f, "{}", string.red()),
         }
     }
 }
@@ -132,7 +130,14 @@ impl Display for RequestStatSummary {
             self.avg_query_size,
             self.min_query_size,
             self.max_query_size,
-            self.total_query_size
-        )
+            self.total_query_size,
+        )?;
+        let mut status_vec: Vec<(u16, u32)> = self.statuse_codes.clone().into_iter().collect();
+        status_vec.sort_by(|a, b| a.0.cmp(&b.0));
+        for (k, v) in status_vec {
+            writeln!(f, "{}: {}", k, v)?;
+        }
+
+        Ok(())
     }
 }
